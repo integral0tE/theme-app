@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="テーマ生成">
+<title>テーマジェネレーター</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 12px 60px;
+    color: #2d3748;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2b6cb0;
+    letter-spacing: 0.05em;
+  }
+  .header p {
+    font-size: 12px;
+    color: #718096;
+    margin-top: 4px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 18px 16px;
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 12px;
+  }
+
+  /* ─── Filters ─── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .pill {
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .15s;
+    color: #4a5568;
+    white-space: nowrap;
+    user-select: none;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+  }
+  .pill:active { transform: scale(0.95); }
+  .pill.active { background: #ebf8ff; border-color: #3182ce; color: #2b6cb0; font-weight: 600; }
+
+  .scope-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .scope-pill {
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .15s;
+    color: #4a5568;
+    user-select: none;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+  }
+  .scope-pill:active { transform: scale(0.95); }
+  .scope-pill.active { background: #faf5ff; border-color: #805ad5; color: #553c9a; font-weight: 600; }
+
+  /* ─── Theme Display ─── */
+  .theme-display {
+    background: linear-gradient(135deg, #ebf8ff 0%, #e9d8fd 100%);
+    border-radius: 14px;
+    padding: 28px 16px;
+    text-align: center;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .theme-display.loading {
+    background: linear-gradient(135deg, #e2e8f0 0%, #edf2f7 100%);
+  }
+  .theme-badge {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .badge {
+    background: rgba(255,255,255,0.7);
+    border-radius: 10px;
+    padding: 3px 10px;
+    font-size: 12px;
+    color: #553c9a;
+    font-weight: 600;
+  }
+  .badge.scope-badge { color: #2b6cb0; }
+  .theme-text {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2d3748;
+    line-height: 1.45;
+  }
+  .theme-hint {
+    font-size: 13px;
+    color: #718096;
+    background: rgba(255,255,255,0.65);
+    border-radius: 8px;
+    padding: 8px 14px;
+    line-height: 1.6;
+    text-align: left;
+  }
+  .placeholder-text {
+    font-size: 15px;
+    color: #a0aec0;
+  }
+
+  /* ─── Buttons ─── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+  }
+  .btn {
+    flex: 1;
+    padding: 0 16px;
+    height: 54px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.96); opacity: .85; }
+  .btn-random { background: #2b6cb0; color: #fff; }
+  .btn-ai { background: linear-gradient(135deg, #805ad5, #3182ce); color: #fff; }
+  .btn:disabled { opacity: .45; }
+
+  /* ─── History ─── */
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .history-item {
+    background: #f7fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 13px 14px;
+    cursor: pointer;
+    transition: background .15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 52px;
+    user-select: none;
+  }
+  .history-item:active { background: #ebf8ff; }
+  .history-item-text { font-size: 14px; color: #2d3748; flex: 1; line-height: 1.4; }
+  .history-item-meta { font-size: 11px; color: #a0aec0; white-space: nowrap; }
+
+  .spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2.5px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-history {
+    text-align: center;
+    font-size: 13px;
+    color: #a0aec0;
+    padding: 16px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1.5px solid #e2e8f0;
+    margin: 4px 0 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎯 テーマジェネレーター</h1>
+  <p>リハビリプログラム用 ・ 60分調べ→5分発表</p>
+</div>
+
+
+<!-- Main Card -->
+<div class="card">
+
+  <!-- Category -->
+  <div class="section-label" style="margin-bottom:8px">カテゴリ</div>
+  <div class="pill-group" id="categoryGroup">
+    <div class="pill active" data-cat="all" onclick="setCategory(this,'all')">すべて</div>
+    <div class="pill" data-cat="recommend" onclick="setCategory(this,'recommend')">⭐ おすすめ</div>
+    <div class="pill" data-cat="knowledge" onclick="setCategory(this,'knowledge')">🧠 心理学・知識</div>
+    <div class="pill" data-cat="lifestyle" onclick="setCategory(this,'lifestyle')">🌿 生活・ケア</div>
+    <div class="pill" data-cat="trivia" onclick="setCategory(this,'trivia')">💡 雑学</div>
+    <div class="pill" data-cat="relationship" onclick="setCategory(this,'relationship')">🤝 人間関係</div>
+    <div class="pill" data-cat="self" onclick="setCategory(this,'self')">✨ 自己探求</div>
+  </div>
+
+  <!-- Scope -->
+  <div style="margin-top:14px">
+    <div class="section-label" style="margin-bottom:8px">地域スコープ（おすすめ系向き）</div>
+    <div class="scope-group" id="scopeGroup">
+      <div class="scope-pill active" data-scope="all" onclick="setScope(this,'all')">すべて</div>
+      <div class="scope-pill" data-scope="近隣" onclick="setScope(this,'近隣')">📍 近隣</div>
+      <div class="scope-pill" data-scope="日本" onclick="setScope(this,'日本')">🇯🇵 日本</div>
+      <div class="scope-pill" data-scope="世界" onclick="setScope(this,'世界')">🌍 世界</div>
+      <div class="scope-pill" data-scope="なし" onclick="setScope(this,'なし')">― スコープなし</div>
+    </div>
+  </div>
+
+  <hr class="divider" style="margin-top:16px">
+
+  <!-- Theme Display -->
+  <div class="theme-display" id="themeDisplay">
+    <div class="placeholder-text">↓ ボタンを押してテーマを取得</div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-random" onclick="showRandom()">🎲 ランダム</button>
+    <button class="btn btn-ai" id="aiBtn" onclick="generateAI()">✨ テーマを生成</button>
+  </div>
+</div>
+
+<!-- History Card -->
+<div class="card">
+  <div class="section-label">履歴</div>
+  <div class="history-list" id="historyList">
+    <div class="empty-history">まだテーマが選ばれていません</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// DATA: Pre-loaded themes
+// ─────────────────────────────────────────
+const THEMES = [
+  // おすすめシリーズ
+  { text:"おすすめのカフェ・コーヒーショップ", category:"recommend", scope:"近隣", hint:"Google マップ・食べログ・Instagramで検索。写真も見せよう" },
+  { text:"おすすめのランチスポット", category:"recommend", scope:"近隣", hint:"価格帯・ジャンル・雰囲気を調べてみよう" },
+  { text:"おすすめの公園・散歩コース", category:"recommend", scope:"近隣", hint:"Google マップで徒歩圏内を検索。季節の見どころも" },
+  { text:"おすすめの映画（最近見たもの or 気になるもの）", category:"recommend", scope:"なし", hint:"Filmarks・映画.com・Netflix作品ページで調べよう" },
+  { text:"おすすめのアニメ・ドラマ", category:"recommend", scope:"なし", hint:"あらすじ・見どころ・どこで見られるかを紹介しよう" },
+  { text:"おすすめのYouTubeチャンネル", category:"recommend", scope:"なし", hint:"チャンネルのテーマ・登録者数・好きな動画を紹介" },
+  { text:"落ち込んだときに聴く曲・プレイリスト", category:"recommend", scope:"なし", hint:"Spotify・Apple Music・YouTubeで探してみよう" },
+  { text:"元気が出る・テンションが上がる曲", category:"recommend", scope:"なし", hint:"なぜその曲がパワーをくれるか考えてみよう" },
+  { text:"おすすめのストレッチ・運動動画", category:"recommend", scope:"なし", hint:"YouTubeで「初心者向けストレッチ」などで検索" },
+  { text:"おすすめの無料スマホアプリ", category:"recommend", scope:"なし", hint:"App Store / Google Play でジャンルから探そう" },
+  { text:"おすすめのコンビニスイーツ・フード", category:"recommend", scope:"日本", hint:"各コンビニ公式サイト・SNS・食べたことあるものでもOK" },
+  { text:"おすすめのインスタント・レトルト食品", category:"recommend", scope:"日本", hint:"値段・カロリー・食べ方のコツも調べてみよう" },
+  { text:"行ってみたい国・場所", category:"recommend", scope:"世界", hint:"気候・文化・おすすめスポット・旅費も調べよう" },
+  { text:"世界のおもしろい祭り・イベント", category:"recommend", scope:"世界", hint:"開催時期・どんな祭りか・参加できるかを紹介" },
+  { text:"おすすめの短時間で読める本・漫画", category:"recommend", scope:"なし", hint:"あらすじ・対象年齢・どこで読めるかを紹介" },
+  { text:"日本のおすすめ観光スポット（都道府県を自分で選ぼう）", category:"recommend", scope:"日本", hint:"その地域ならではのグルメ・体験・アクセス方法も" },
+  { text:"おすすめのポッドキャスト・ラジオ番組", category:"recommend", scope:"なし", hint:"Spotify・Radiko・Apple Podcastsで探してみよう" },
+  { text:"おすすめのセルフケアグッズ・100均アイテム", category:"recommend", scope:"日本", hint:"実際に使ってみたい or 使ってよかったものを紹介" },
+
+  // 心理学・知識系
+  { text:"「やる気が出ない」は意志の問題じゃない？─ 科学的な理由", category:"knowledge", scope:"なし", hint:"ドーパミン・疲労・脳のしくみで調べてみよう" },
+  { text:"自己批判をやめる方法 ─ セルフコンパッションとは？", category:"knowledge", scope:"なし", hint:"「セルフコンパッション クリスティン・ネフ」で検索" },
+  { text:"承認欲求とSNSの心理", category:"knowledge", scope:"なし", hint:"なぜ「いいね」が気になるのか？心理学的に調べよう" },
+  { text:"緊張するのはなぜ？─ アドレナリンと体の反応", category:"knowledge", scope:"なし", hint:"自律神経・闘争逃走反応・対処法も調べよう" },
+  { text:"プラセボ効果はなぜ起きる？─ 脳と思い込みの科学", category:"knowledge", scope:"なし", hint:"「プラセボ効果 仕組み」でわかりやすい記事を探そう" },
+  { text:"怒りは「二次感情」？─ 感情のしくみを知ろう", category:"knowledge", scope:"なし", hint:"怒りの裏にある感情・アンガーマネジメントで調べよう" },
+  { text:"音楽を聴くと元気になる理由", category:"knowledge", scope:"なし", hint:"音楽と脳・オキシトシン・気分との関係を調べよう" },
+  { text:"笑うと体に何が起きる？─ 笑いと免疫の科学", category:"knowledge", scope:"なし", hint:"免疫細胞・内分泌・「笑いヨガ」も面白い" },
+  { text:"色が気分に与える影響 ─ カラーセラピーの基本", category:"knowledge", scope:"なし", hint:"色と感情の関係・各色の心理的効果を調べよう" },
+  { text:"睡眠と気分の関係 ─ 睡眠の質を上げる方法", category:"knowledge", scope:"なし", hint:"レム睡眠・コルチゾール・睡眠衛生で調べよう" },
+  { text:"「話を聞いてもらう」だけで楽になる理由", category:"knowledge", scope:"なし", hint:"傾聴・カタルシス・コルチゾールの変化で調べよう" },
+  { text:"人が「比べてしまう」のはなぜ？─ 社会的比較理論", category:"knowledge", scope:"なし", hint:"SNS時代の比較・心理学の研究を調べよう" },
+
+  // 生活・ケア系
+  { text:"5分でできるストレッチ ─ 自分が試したいもの1つ", category:"lifestyle", scope:"なし", hint:"YouTubeで「5分 ストレッチ」で検索して動画も紹介しよう" },
+  { text:"深呼吸がなぜ効くのか ─ 自律神経の仕組み", category:"lifestyle", scope:"なし", hint:"副交感神経・4-7-8呼吸法・ボックスブリージングで調べよう" },
+  { text:"腸と脳はつながっている？─ 食事と気分の関係", category:"lifestyle", scope:"なし", hint:"腸脳相関・セロトニン・発酵食品で調べよう" },
+  { text:"スマホ疲れ（デジタルファティーグ）を減らす方法", category:"lifestyle", scope:"なし", hint:"ブルーライト・通知の影響・デジタルデトックスで調べよう" },
+  { text:"「いい睡眠」をとるための夜のルーティン", category:"lifestyle", scope:"なし", hint:"就寝前の行動・温度・照明の影響を調べよう" },
+  { text:"1日1回、気分がよくなるためにできること", category:"lifestyle", scope:"なし", hint:"グラティチュードジャーナル・朝の習慣・散歩などで調べよう" },
+  { text:"安くておいしい！自炊レシピを1つ紹介しよう", category:"lifestyle", scope:"なし", hint:"クックパッド・Kurashiru・「節約 簡単 レシピ」で検索" },
+
+  // 雑学
+  { text:"世界一幸福な国デンマーク・フィンランドの人が日常でやっていること", category:"trivia", scope:"世界", hint:"「ヒュッゲ」「コーヒーブレイク文化」で調べよう" },
+  { text:"日本のユニークな風習・文化（都道府県を自分で選ぼう）", category:"trivia", scope:"日本", hint:"ご当地グルメ・方言・お祭りなど何でもOK" },
+  { text:"動物の面白い習性・生態", category:"trivia", scope:"世界", hint:"好きな動物・驚いた生き物の習性を調べよう" },
+  { text:"「色」の文化的な意味の違い ─ 国によってこんなに違う！", category:"trivia", scope:"世界", hint:"白・赤・黒などが文化によってどんな意味を持つか調べよう" },
+  { text:"食べ物のびっくり豆知識 ─ 知らなかったこと1つ", category:"trivia", scope:"なし", hint:"「食べ物 雑学」「野菜 実は〇〇」などで検索しよう" },
+  { text:"世界のおもしろい学校・教育の取り組み", category:"trivia", scope:"世界", hint:"フィンランドの教育・デンマークの学校・日本との違い" },
+  { text:"昔と今でこんなに変わった！ ─ テクノロジーの変化", category:"trivia", scope:"なし", hint:"スマホ・SNS・AIが10〜20年でどう変わったか調べよう" },
+
+  // 人間関係
+  { text:"境界線（バウンダリー）って何？ ─ 自分を守る考え方", category:"relationship", scope:"なし", hint:"「バウンダリー 心理学」「No と言える力」で調べよう" },
+  { text:"謝り方のコツ ─ 「ごめん」が伝わる言葉の選び方", category:"relationship", scope:"なし", hint:"謝罪の5要素・「I メッセージ」で調べよう" },
+  { text:"上手な話の聞き方 ─ 「聴く」と「聞く」の違い", category:"relationship", scope:"なし", hint:"アクティブリスニング・傾聴スキルで調べよう" },
+  { text:"「親切」がなぜ自分も幸せにするのか", category:"relationship", scope:"なし", hint:"親切行動と幸福感の研究・オキシトシンの働きを調べよう" },
+  { text:"自分の気持ちを言葉にする方法 ─ 感情語彙を増やそう", category:"relationship", scope:"なし", hint:"感情の輪・ムードメーター・感情日記で調べよう" },
+
+  // 自己探求
+  { text:"将来やってみたい仕事・職業を1つ紹介しよう", category:"self", scope:"なし", hint:"仕事の内容・なるための方法・給与・やりがいを調べよう" },
+  { text:"今日やってみたいセルフケアを1つ選ぼう ─ その効果は？", category:"self", scope:"なし", hint:"「セルフケア 種類」でいろいろ調べて自分に合うものを" },
+  { text:"好きな食べ物のおすすめポイントを徹底紹介", category:"self", scope:"なし", hint:"歴史・栄養・おいしい食べ方・お店・レシピを調べよう" },
+  { text:"好きな名言・映画のセリフ ─ なぜ刺さったか考えよう", category:"self", scope:"なし", hint:"その言葉の背景・作者・自分なりの解釈を考えよう" },
+  { text:"やってみたい趣味を1つ ─ 始め方を調べよう", category:"self", scope:"なし", hint:"費用・道具・初心者向け入門ガイドを調べよう" },
+  { text:"尊敬する人・好きな有名人を紹介しよう", category:"self", scope:"なし", hint:"その人の経歴・名言・影響を与えた出来事を調べよう" },
+];
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let selectedCategory = "all";
+let selectedScope = "all";
+let history = [];
+let currentTheme = null;
+let isGenerating = false;
+
+// ─────────────────────────────────────────
+// TEMPLATE DATA
+// ─────────────────────────────────────────
+const TMPL = {
+  recommend: {
+    patterns: [
+      "おすすめの{noun}を紹介しよう",
+      "{noun}のおすすめを調べよう",
+      "自分だけの{noun}を見つけよう",
+      "今注目の{noun}を探そう",
+      "隠れた名{noun}を発見しよう",
+      "一度は行きたい{noun}",
+      "みんなに教えたい{noun}",
+      "{noun}を徹底リサーチ！",
+      "穴場の{noun}を探してみよう",
+      "{noun}、あなたのイチオシは？",
+    ],
+    近隣: [
+      ["カフェ・コーヒーショップ", "Google マップ・食べログ・Instagramで検索しよう"],
+      ["ランチスポット", "価格帯・ジャンル・混雑時間も調べてみよう"],
+      ["ディナーレストラン", "雰囲気・メニュー・予算を調べよう"],
+      ["公園・散歩コース", "徒歩圏内を Google マップで検索。季節の見どころも"],
+      ["スイーツ・ケーキ屋さん", "食べログ・Instagramで人気メニューを調べよう"],
+      ["隠れ家的なお店", "「穴場 カフェ [地名]」などで検索してみよう"],
+      ["テイクアウトグルメ", "Uber Eats・出前館でも探せるよ"],
+      ["夜景・夕日スポット", "「[地名] 夜景 おすすめ」で検索しよう"],
+      ["写真映えスポット", "Instagramで「#[地名] フォトスポット」で探そう"],
+      ["居心地のいい場所", "カフェ・図書館・公園など、落ち着ける場所を探そう"],
+      ["安くておいしいお店", "「コスパ最強 ランチ [地名]」などで検索しよう"],
+      ["自習・勉強できる場所", "図書館・カフェ・コワーキングスペースを調べよう"],
+      ["パン屋・ベーカリー", "食べログ・Instagramで人気のパン屋を探そう"],
+      ["本屋・古本屋", "品揃え・雰囲気・営業時間も調べよう"],
+      ["花・緑が多いスポット", "季節の花・紅葉・緑道など癒しスポットを探そう"],
+      ["ラーメン屋", "スープの種類・トッピング・人気メニューを調べよう"],
+      ["定食屋・食堂", "「[地名] 定食 おすすめ」で検索しよう"],
+      ["銭湯・サウナ", "料金・設備・おすすめポイントを調べよう"],
+      ["ドッグカフェ・動物カフェ", "種類・料金・予約方法を調べよう"],
+    ],
+    日本: [
+      ["観光スポット（都道府県を自分で選ぼう）", "見どころ・アクセス・費用を調べよう"],
+      ["温泉・スパ施設", "泉質・日帰り入浴・料金も調べてみよう"],
+      ["ご当地グルメ", "その土地ならではの食べ物・食べ方を紹介しよう"],
+      ["絶景スポット", "「日本 絶景 おすすめ」などで検索。写真も見せよう"],
+      ["アニメの聖地", "好きなアニメの舞台になった場所を調べよう"],
+      ["世界遺産", "登録理由・見どころ・アクセスを調べよう"],
+      ["道の駅・直売所", "地元の特産品・グルメが買える場所を調べよう"],
+      ["お祭り・イベント", "開催時期・内容・見どころを紹介しよう"],
+      ["城・歴史スポット", "歴史的背景・見どころ・アクセスを調べよう"],
+      ["水族館・動物園", "見どころの動物・料金・アクセスを調べよう"],
+      ["テーマパーク・遊園地", "人気アトラクション・料金・混雑状況を調べよう"],
+      ["島・離島", "アクセス方法・見どころ・特産品を調べよう"],
+      ["秘境スポット", "「日本 秘境 おすすめ」で検索してみよう"],
+      ["美術館・博物館", "展示内容・料金・見どころを調べよう"],
+      ["キャンプ場・自然スポット", "設備・予約方法・周辺の見どころを調べよう"],
+      ["神社・お寺", "ご利益・歴史・参拝方法を調べよう"],
+      ["日帰り旅行スポット", "「日帰り 旅行 おすすめ [地方]」で検索しよう"],
+    ],
+    世界: [
+      ["旅行先・国", "気候・文化・おすすめスポット・旅費も調べよう"],
+      ["世界遺産", "登録理由・場所・見どころを紹介しよう"],
+      ["お祭り・フェスティバル", "開催時期・内容・参加できるかを調べよう"],
+      ["絶景スポット", "「世界 絶景 ベスト」などで検索しよう"],
+      ["秘境・穴場の国", "まだあまり知られていない旅行先を探してみよう"],
+      ["動物が見られるスポット", "動物と触れ合える場所・有名な動物を調べよう"],
+      ["世界のユニークな建物", "建築様式・歴史・場所を紹介しよう"],
+      ["世界のストリートフード", "「世界 屋台グルメ おすすめ」で検索しよう"],
+      ["世界の美しいカフェ", "「世界一美しいカフェ」などで検索してみよう"],
+      ["世界のユニークな交通手段", "ゴンドラ・トゥクトゥク・ケーブルカーなど調べよう"],
+      ["世界のビーチ・リゾート", "「世界 美しいビーチ」などで検索しよう"],
+      ["世界の市場・マーケット", "活気ある市場・食材・雰囲気を調べよう"],
+    ],
+    なし: [
+      ["映画（最近気になるもの）", "あらすじ・見どころ・どこで見られるかを紹介しよう"],
+      ["アニメ・ドラマ", "あらすじ・見どころ・配信サービスを紹介しよう"],
+      ["YouTubeチャンネル", "テーマ・登録者数・好きな動画を紹介しよう"],
+      ["音楽・プレイリスト", "なぜその曲がお気に入りかも話してみよう"],
+      ["本・漫画", "あらすじ・おすすめポイント・どこで読めるかを紹介"],
+      ["スマホアプリ（無料）", "App Store / Google Play でジャンルから探そう"],
+      ["ポッドキャスト・ラジオ", "Spotify・Radiko・Apple Podcastsで探してみよう"],
+      ["コンビニスイーツ・フード", "各コンビニ公式サイト・SNSをチェックしよう"],
+      ["インスタント・レトルト食品", "値段・カロリー・おいしい食べ方も調べよう"],
+      ["セルフケアグッズ", "効果・価格・使い方を調べて紹介しよう"],
+      ["100均アイテム", "ダイソー・セリア・キャンドゥのサイトやSNSで探そう"],
+      ["スマホゲーム（無料）", "ジャンル・遊び方・面白いポイントを紹介しよう"],
+      ["ストレッチ・運動動画", "YouTubeで「初心者向けストレッチ」などで検索しよう"],
+      ["癒し動画・ASMR", "YouTubeで気持ちよくなれる動画を探してみよう"],
+      ["推し・好きなキャラクター", "魅力・名言・エピソードを紹介しよう"],
+      ["面白い雑貨・グッズ", "「おもしろ雑貨 おすすめ」などで検索しよう"],
+      ["サブスク・定額サービス", "料金・コンテンツ・無料期間を調べよう"],
+      ["ボードゲーム・カードゲーム", "ルール・人数・購入場所を調べよう"],
+      ["料理レシピ（お気に入りの一品）", "材料・手順・アレンジ方法を紹介しよう"],
+    ],
+  },
+  knowledge: {
+    patterns: [
+      "{noun}を調べよう",
+      "{noun}について深掘りしよう",
+      "意外と知らない{noun}",
+      "{noun}の科学を探ってみよう",
+      "知って得する{noun}",
+      "{noun}のしくみを調べよう",
+      "{noun}の真実に迫ろう",
+    ],
+    なし: [
+      ["やる気が出ないときの脳のしくみ", "ドーパミン・疲労・脳の仕組みで調べてみよう"],
+      ["セルフコンパッション（自己受容）", "「セルフコンパッション クリスティン・ネフ」で検索"],
+      ["承認欲求とSNSの関係", "なぜ「いいね」が気になるのか心理学的に調べよう"],
+      ["緊張したときの体の反応", "自律神経・アドレナリン・対処法を調べよう"],
+      ["プラセボ効果のしくみ", "脳と思い込みの科学を調べてみよう"],
+      ["怒りと感情のしくみ", "怒りの裏にある感情・アンガーマネジメントで調べよう"],
+      ["音楽が気分に与える影響", "音楽と脳・オキシトシン・気分の関係を調べよう"],
+      ["笑いと体の関係", "免疫細胞・内分泌・「笑いヨガ」も面白い"],
+      ["色が気分に与える影響", "カラーセラピー・各色の心理的効果を調べよう"],
+      ["睡眠と気分の関係", "レム睡眠・コルチゾール・睡眠衛生で調べよう"],
+      ["話を聞いてもらうと楽になる理由", "傾聴・カタルシス・コルチゾールの変化を調べよう"],
+      ["人が比べてしまう心理", "社会的比較理論・SNS時代の比較を調べよう"],
+      ["マインドフルネスの効果", "瞑想・集中力・ストレス軽減の研究を調べよう"],
+      ["ポジティブ心理学とは", "幸福感・強みを活かす・ウェルビーイングで調べよう"],
+      ["記憶のしくみと忘れ方", "エビングハウスの忘却曲線・記憶の種類を調べよう"],
+      ["習慣が身につくしくみ", "「習慣 形成 脳」「21日の法則」などで調べよう"],
+      ["ストレスが体に与える影響", "コルチゾール・免疫・対処法を調べよう"],
+      ["共感疲労（エンパシー疲れ）", "「共感疲労 対処法」「境界線」で調べよう"],
+      ["創造性が生まれる瞬間", "インキュベーション効果・ゾーン状態を調べよう"],
+      ["感謝が心に与える影響", "感謝日記・グラティチュードの研究を調べよう"],
+      ["不安と脳のしくみ", "扁桃体・不安障害・対処法を調べよう"],
+      ["自己効力感（自信）の育て方", "「セルフエフィカシー」「自己効力感 高める方法」で調べよう"],
+      ["体内時計・サーカディアンリズム", "朝型・夜型・生活リズムとの関係を調べよう"],
+      ["共感力と脳のミラーニューロン", "「ミラーニューロン 共感」で検索しよう"],
+    ],
+  },
+  lifestyle: {
+    patterns: [
+      "{noun}を試してみよう",
+      "{noun}のコツを調べよう",
+      "生活に取り入れたい{noun}",
+      "{noun}の効果を調べよう",
+      "毎日できる{noun}を探そう",
+      "{noun}で気分をアップ！",
+      "今日から始める{noun}",
+    ],
+    なし: [
+      ["5分でできるストレッチ", "YouTubeで「5分 ストレッチ 初心者」で検索しよう"],
+      ["深呼吸・呼吸法", "4-7-8呼吸法・ボックスブリージングを調べよう"],
+      ["腸活・発酵食品", "腸脳相関・セロトニン・おすすめの発酵食品を調べよう"],
+      ["スマホ疲れを減らす方法", "デジタルデトックス・通知の切り方を調べよう"],
+      ["良い睡眠のための夜のルーティン", "就寝前の行動・温度・照明の影響を調べよう"],
+      ["朝のルーティンのアイデア", "「最高の朝ルーティン」「朝活」などで検索しよう"],
+      ["節約しながら楽しむ自炊レシピ", "クックパッド・Kurashiru・「節約 簡単 レシピ」で検索"],
+      ["整理整頓・断捨離のコツ", "「ミニマリスト 片付け」「こんまり メソッド」で調べよう"],
+      ["気分転換になる運動", "ウォーキング・ヨガ・ダンス動画など探してみよう"],
+      ["日光・自然が体に与える効果", "セロトニン・ビタミンD・森林浴の効果を調べよう"],
+      ["アロマ・香りのリラックス効果", "ラベンダー・ベルガモット・香りと脳の関係を調べよう"],
+      ["ハーブティー・お茶の効能", "カモミール・ルイボス・緑茶の効果を調べよう"],
+      ["瞑想・マインドフルネスのやり方", "「初心者 瞑想 やり方」でYouTube動画を探そう"],
+      ["感謝日記（グラティチュードジャーナル）", "書き方・効果・続けるコツを調べよう"],
+      ["部屋を居心地よくするアイデア", "「インテリア 一人暮らし 低予算」などで検索しよう"],
+      ["水分補給と体調の関係", "脱水症状・適切な水の量・おすすめの飲み方を調べよう"],
+      ["体に良いおやつ・間食", "「健康的なおやつ おすすめ」などで検索しよう"],
+      ["読書の効果と続けるコツ", "「読書 メリット」「読書習慣 作り方」で調べよう"],
+      ["日記・手帳の活用法", "バレットジャーナル・感情日記・続けるコツを調べよう"],
+    ],
+  },
+  trivia: {
+    patterns: [
+      "{noun}の雑学",
+      "{noun}のびっくり豆知識",
+      "意外と知らない{noun}の話",
+      "調べてみたら面白かった{noun}",
+      "{noun}の謎に迫ろう",
+      "{noun}って実はこんなにすごい！",
+      "{noun}の意外な真実",
+    ],
+    なし: [
+      ["食べ物のびっくり豆知識", "「食べ物 雑学」「野菜 実は〇〇」などで検索しよう"],
+      ["昔と今のテクノロジーの変化", "スマホ・SNS・AIが20年でどう変わったか調べよう"],
+      ["人間の体の不思議", "「体 雑学」「体 驚き」などで調べてみよう"],
+      ["言葉・語源の面白い話", "よく使う言葉の意外な由来を調べてみよう"],
+      ["数字にまつわる面白い話", "「数学 雑学」「数字 不思議」で検索しよう"],
+    ],
+    日本: [
+      ["日本のユニークな風習・文化", "ご当地グルメ・方言・独自の習慣など何でもOK"],
+      ["日本語の面白い方言", "「方言 おもしろ」「方言クイズ」などで検索しよう"],
+      ["日本の世界一・日本初のもの", "「日本 世界一 一覧」などで検索しよう"],
+      ["江戸時代の庶民の暮らし", "食事・仕事・娯楽など現代との違いを調べよう"],
+      ["日本の変わった乗り物・交通手段", "「日本 ユニーク 乗り物」などで検索しよう"],
+      ["昭和・平成と令和の生活の違い", "食・ファッション・娯楽の変化を調べよう"],
+      ["日本のびっくり自動販売機", "「日本 変わった自販機」で検索しよう"],
+    ],
+    世界: [
+      ["世界の幸福な国の習慣", "「ヒュッゲ」「フィンランド 幸福」などで調べよう"],
+      ["動物の面白い習性・生態", "好きな動物の意外な行動・能力を調べよう"],
+      ["色の文化的な意味の違い", "白・赤・黒などが文化によってどんな意味を持つか調べよう"],
+      ["世界の変わった学校・教育", "フィンランドの教育・珍しい学校の取り組みを調べよう"],
+      ["世界のユニークな法律", "「世界 変わった法律」などで検索しよう"],
+      ["世界のおもしろい挨拶・マナー", "国によって違う挨拶の仕方・タブーを調べよう"],
+      ["世界の不思議な自然現象", "オーロラ・ピンク湖・蛍光海など調べてみよう"],
+      ["世界の変わった食べ物", "「世界 珍しい食べ物」などで検索しよう"],
+      ["世界の長寿の村・地域の秘密", "「ブルーゾーン 長寿 習慣」で調べよう"],
+    ],
+  },
+  relationship: {
+    patterns: [
+      "{noun}について考えよう",
+      "{noun}のコツを調べよう",
+      "人間関係に役立つ{noun}",
+      "知っておきたい{noun}",
+      "{noun}を深掘りしよう",
+      "大切にしたい{noun}",
+    ],
+    なし: [
+      ["境界線（バウンダリー）の引き方", "「バウンダリー 心理学」「Noと言える力」で調べよう"],
+      ["上手な謝り方", "謝罪の5要素・「Iメッセージ」で調べよう"],
+      ["アクティブリスニング（傾聴）", "「傾聴スキル」「聴き上手になる方法」で調べよう"],
+      ["親切が自分も幸せにする理由", "親切行動と幸福感の研究・オキシトシンを調べよう"],
+      ["感情を言葉にする方法", "感情の輪・ムードメーター・感情日記で調べよう"],
+      ["アサーティブコミュニケーション", "「アサーティブ」「自分の気持ちを伝える方法」で検索"],
+      ["第一印象を決めるしくみ", "メラビアンの法則・初頭効果を調べよう"],
+      ["孤独と一人時間の違い", "「良質な孤独」「一人でいることの価値」で調べよう"],
+      ["SNSでのコミュニケーションの難しさ", "テキストで誤解が生まれる理由・対策を調べよう"],
+      ["感謝を上手に伝えるコツ", "感謝の伝え方・言葉とジェスチャーの効果を調べよう"],
+      ["断り方のコツ", "「上手な断り方」「Noの言い方」などで調べよう"],
+      ["自分の気持ちを伝えるコツ", "「Iメッセージ」「感情表現 練習」で調べよう"],
+      ["信頼関係のつくり方", "「信頼 心理学」「ラポール形成」で調べよう"],
+      ["ケンカの後の仲直り方法", "「関係修復 コツ」「謝罪 仲直り」で調べよう"],
+    ],
+  },
+  self: {
+    patterns: [
+      "{noun}について考えてみよう",
+      "{noun}を探求しよう",
+      "自分を知るための{noun}",
+      "{noun}を調べて自分に活かそう",
+      "{noun}を深掘りしよう",
+      "自分らしい{noun}を見つけよう",
+    ],
+    なし: [
+      ["将来やってみたい仕事・職業", "仕事の内容・なるための道・やりがいを調べよう"],
+      ["今日試したいセルフケア", "「セルフケア 種類」でいろいろ調べてみよう"],
+      ["好きな食べ物の魅力を徹底紹介", "歴史・栄養・おいしい食べ方・お店を調べよう"],
+      ["好きな名言・映画のセリフ", "その言葉の背景・作者・自分なりの解釈を考えよう"],
+      ["やってみたい趣味の始め方", "費用・道具・初心者向け入門ガイドを調べよう"],
+      ["尊敬する人・好きな有名人", "経歴・名言・影響を与えた出来事を調べよう"],
+      ["自分の「強み」を探してみよう", "「VIA強み診断」「ストレングスファインダー」で調べよう"],
+      ["「好き」と「得意」の違いを考えよう", "自己分析の方法・好きなことの見つけ方を調べよう"],
+      ["自分のストレスサインを知ろう", "体のサイン・心のサイン・早期気づきの大切さを調べよう"],
+      ["回復力（レジリエンス）を高める方法", "「レジリエンス 鍛え方」「逆境 強さ」で調べよう"],
+      ["「完璧主義」と上手に付き合う方法", "完璧主義の心理・良い面・手放す方法を調べよう"],
+      ["自分を大切にするためにできること", "セルフケア・自己肯定感・自分への優しさを調べよう"],
+      ["自分のペースで生きるヒント", "「マイペース 大切さ」「他人と比べない方法」で調べよう"],
+      ["好きなことと苦手なことを整理しよう", "得意・不得意の棚卸し方法を調べよう"],
+    ],
+  },
+};
+
+function generateFromTemplate() {
+  const cats = selectedCategory === "all"
+    ? ["recommend","knowledge","lifestyle","trivia","relationship","self"]
+    : [selectedCategory];
+
+  const candidates = [];
+  for (const cat of cats) {
+    const tmpl = TMPL[cat];
+    if (!tmpl) continue;
+    const scopes = selectedScope === "all"
+      ? Object.keys(tmpl).filter(k => k !== "patterns")
+      : [selectedScope, "なし"];
+    for (const scope of [...new Set(scopes)]) {
+      const items = tmpl[scope];
+      if (items && items.length > 0) {
+        candidates.push({ cat, scope, items, patterns: tmpl.patterns });
+      }
+    }
+  }
+  if (candidates.length === 0) return null;
+
+  const pool = candidates[Math.floor(Math.random() * candidates.length)];
+  const item = pool.items[Math.floor(Math.random() * pool.items.length)];
+  const pattern = pool.patterns[Math.floor(Math.random() * pool.patterns.length)];
+
+  return {
+    text: pattern.replace("{noun}", item[0]),
+    hint: item[1],
+    category: pool.cat,
+    scope: pool.scope,
+  };
+}
+
+// ─────────────────────────────────────────
+// FILTERS
+// ─────────────────────────────────────────
+function setCategory(el, cat) {
+  selectedCategory = cat;
+  document.querySelectorAll("#categoryGroup .pill").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+}
+
+function setScope(el, scope) {
+  selectedScope = scope;
+  document.querySelectorAll("#scopeGroup .scope-pill").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+}
+
+function filteredThemes() {
+  return THEMES.filter(t => {
+    const catMatch = selectedCategory === "all" || t.category === selectedCategory;
+    const scopeMatch = selectedScope === "all" || t.scope === selectedScope;
+    return catMatch && scopeMatch;
+  });
+}
+
+// ─────────────────────────────────────────
+// DISPLAY
+// ─────────────────────────────────────────
+function displayTheme(theme, source) {
+  const el = document.getElementById("themeDisplay");
+  const catLabel = {
+    recommend:"⭐ おすすめ", knowledge:"🧠 心理学・知識", lifestyle:"🌿 生活・ケア",
+    trivia:"💡 雑学", relationship:"🤝 人間関係", self:"✨ 自己探求"
+  }[theme.category] || theme.category;
+
+  let badgesHTML = `<span class="badge">${catLabel}</span>`;
+  if (theme.scope && theme.scope !== "なし") {
+    badgesHTML += `<span class="badge scope-badge">📍 ${theme.scope}</span>`;
+  }
+  if (source === "ai") {
+    badgesHTML += `<span class="badge" style="color:#805ad5">✨ AI生成</span>`;
+  }
+
+  el.innerHTML = `
+    <div class="theme-badge">${badgesHTML}</div>
+    <div class="theme-text">「${theme.text}」</div>
+    ${theme.hint ? `<div class="theme-hint">💡 ${theme.hint}</div>` : ""}
+  `;
+  el.classList.remove("loading");
+
+  // Add to history
+  addHistory(theme, source);
+  currentTheme = theme;
+}
+
+function addHistory(theme, source) {
+  history.unshift({ theme, source, time: new Date() });
+  if (history.length > 20) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const el = document.getElementById("historyList");
+  if (history.length === 0) {
+    el.innerHTML = `<div class="empty-history">まだテーマが選ばれていません</div>`;
+    return;
+  }
+  el.innerHTML = history.map((h, i) => {
+    const timeStr = h.time.toLocaleTimeString("ja-JP", {hour:"2-digit", minute:"2-digit"});
+    const aiTag = h.source === "ai" ? " ✨" : "";
+    return `<div class="history-item" onclick="restoreHistory(${i})">
+      <span class="history-item-text">${h.theme.text}${aiTag}</span>
+      <span class="history-item-meta">${timeStr}</span>
+    </div>`;
+  }).join("");
+}
+
+function restoreHistory(idx) {
+  displayThemeFromHistory(history[idx].theme, history[idx].source);
+}
+
+function displayThemeFromHistory(theme, source) {
+  const el = document.getElementById("themeDisplay");
+  const catLabel = {
+    recommend:"⭐ おすすめ", knowledge:"🧠 心理学・知識", lifestyle:"🌿 生活・ケア",
+    trivia:"💡 雑学", relationship:"🤝 人間関係", self:"✨ 自己探求"
+  }[theme.category] || theme.category;
+
+  let badgesHTML = `<span class="badge">${catLabel}</span>`;
+  if (theme.scope && theme.scope !== "なし") {
+    badgesHTML += `<span class="badge scope-badge">📍 ${theme.scope}</span>`;
+  }
+  if (source === "ai") {
+    badgesHTML += `<span class="badge" style="color:#805ad5">✨ AI生成</span>`;
+  }
+
+  el.innerHTML = `
+    <div class="theme-badge">${badgesHTML}</div>
+    <div class="theme-text">「${theme.text}」</div>
+    ${theme.hint ? `<div class="theme-hint">💡 ${theme.hint}</div>` : ""}
+  `;
+  el.classList.remove("loading");
+}
+
+// ─────────────────────────────────────────
+// RANDOM
+// ─────────────────────────────────────────
+function showRandom() {
+  const pool = filteredThemes();
+  if (pool.length === 0) {
+    const el = document.getElementById("themeDisplay");
+    el.innerHTML = `<div class="placeholder-text" style="color:#e53e3e">条件に合うテーマがありません。フィルターを変えてみてください。</div>`;
+    return;
+  }
+  const theme = pool[Math.floor(Math.random() * pool.length)];
+  displayTheme(theme, "preset");
+}
+
+// ─────────────────────────────────────────
+// GENERATE (template-based)
+// ─────────────────────────────────────────
+function generateAI() {
+  if (isGenerating) return;
+  isGenerating = true;
+
+  const btn = document.getElementById("aiBtn");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> 生成中…`;
+
+  const el = document.getElementById("themeDisplay");
+  el.classList.add("loading");
+  el.innerHTML = `<div class="placeholder-text">テーマを考えています…</div>`;
+
+  setTimeout(() => {
+    const recentTexts = new Set(history.slice(0, 12).map(h => h.theme.text));
+    let theme = null;
+    for (let i = 0; i < 8; i++) {
+      const candidate = generateFromTemplate();
+      if (!candidate) break;
+      if (!recentTexts.has(candidate.text)) { theme = candidate; break; }
+      if (!theme) theme = candidate;
+    }
+
+    if (theme) {
+      displayTheme(theme, "ai");
+    } else {
+      el.classList.remove("loading");
+      el.innerHTML = `<div class="placeholder-text" style="color:#e53e3e">条件に合うテーマが見つかりません。フィルターを変えてみてください。</div>`;
+    }
+
+    isGenerating = false;
+    btn.disabled = false;
+    btn.innerHTML = "✨ テーマを生成";
+  }, 400);
+}
+</script>
+</body>
+</html>
